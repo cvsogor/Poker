@@ -1,0 +1,910 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Poker</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <link type="text/css" href="http://yui.yahooapis.com/3.3.0/build/cssreset/reset-min.css" />
+</head>
+<style>
+    .clear
+    {
+        clear: both;
+    }
+    .available-cards
+    {
+    }
+    .available-cards td
+    {
+        text-align: center;
+        cursor: pointer;
+        cursor: hand;
+    }
+    .card:hover
+    {
+        background-color: #eee;
+    }
+    .card
+    {
+        width: 45px;
+        height: 60px;
+        border: solid 1px #eee;
+        border-radius: 6px;
+        font-size: 21px;
+        text-align: center;
+        background-color: #fff;
+    }
+    .hearts, .clubs
+    {
+        color: red;
+    }
+    .player-zone
+    {
+        float: left;
+        margin: 10px;
+        padding: 10px;
+        border-radius: 10px;
+        width: 360px;
+        background-color: #ccc;
+    }
+    .player-zone .cards
+    {
+        float: left;
+        height: 270px;
+        margin-right: 10px;
+    }
+    .player-zone .card
+    {
+        float: left;
+        margin-left: 10px;
+    }
+    .player-zone .statistics
+    {
+        margin-left: 10px;
+    }
+    
+    .player-zone .statistics {
+    }
+    .player-zone .statistics span
+    {
+        font-weight: bold;
+    }
+    .player-zone ul
+    {
+        margin: 0px;
+        padding: 0px;
+        list-style: none;
+    }
+    .table
+    {
+        float: left;
+        margin-right: 80px;
+    }
+    .table .card
+    {
+        float: left;
+        margin-left: 10px;
+    }
+    .card.highlighted
+    {
+        background-color: #e0e0ff;
+    }
+    .most-possible {
+        color: Red;
+    }
+    .second-possible {
+        color: #ff4040;
+    }
+</style>
+<body>
+    <div class="table">
+        <h2>Table</h2>
+        <div class="cards">
+        </div>
+    </div>
+    <div class="available-cards">
+        <h2>Available cards</h2>
+    </div>
+    <div class="clear">
+    </div>
+    <div class="players">
+    </div>
+    <div class="clear">
+    </div>
+    <div class="global-stat">
+        <label>Games played:
+        </label>
+        <span class="games-played"></span>
+        <br />
+        <label>
+            Loading:
+        </label>
+        <span class="load"></span>
+    </div>
+    <input class="reset" type="button" value="reset" />
+    <script type="text/javascript">
+
+        function createEmptyStat() {
+            return {
+                royalFlash: 0,
+                straightFlash: 0,
+                fourOfKind: 0,
+                fullHouse: 0,
+                Flash: 0,
+                straight: 0,
+                threeOfKind: 0,
+                twoPairs: 0,
+                onePair: 0,
+                highCard: 0,
+                wins: 0,
+                lost: 0,
+                splits: 0
+            };
+        }
+
+        var gamesPlayed = 0;
+
+
+        function PokerPlayer() {
+        }
+
+        function PokerPlayerStatistics($this) {
+            var values = createEmptyStat();
+
+            var $wins = $('<li class="wins"><label>Wins: </label><span></span></li>');
+            $this.append($wins);
+            var $lost = $('<li class="lost"><label>Losses: </label><span></span></li>');
+            $this.append($lost);
+            var $split = $('<li class="split"><label>Splits: </label><span></span></li>');
+            $this.append($split);
+            $this.append('<hr />');
+            var $royalFlash = $('<li class="royalFlash"><label>Flash Royale: </label><span></span></li>');
+            $this.append($royalFlash);
+            var $straightFlash = $('<li class="straightFlash"><label>Street Flash: </label><span></span></li>');
+            $this.append($straightFlash);
+            var $fourOfKind = $('<li class="fourOfKind"><label>Four: </label><span></span></li>');
+            $this.append($fourOfKind);
+            var $fullHouses = $('<li class="fullHouse"><label>Full House: </label><span></span></li>');
+            $this.append($fullHouses);
+            var $Flashes = $('<li class="Flash"><label>Flash: </label><span></span></li>');
+            $this.append($Flashes);
+            var $straights = $('<li class="straight"><label>Straight: </label><span></span></li>');
+            $this.append($straights);
+            var $threes = $('<li class="threeOfKind"><label>Triplets: </label><span></span></li>');
+            $this.append($threes);
+            var $twopairs = $('<li class="twoPairs"><label>Two Pairs: </label><span></span></li>');
+            $this.append($twopairs);
+            var $onepair = $('<li class="onePair"><label>Pair: </label><span></span></li>');
+            $this.append($onepair);
+            var $highCard = $('<li class="highCard"><label>Senior Card: </label><span></span></li>');
+            $this.append($highCard);
+
+            function formatValue(val) {
+                var total = gamesPlayed > 0 ? gamesPlayed : 1;
+                return val + ' (' + (Math.round(100000 * val / total) / 1000) + '%)';
+            }
+
+            this.getValues = function () {
+                return values;
+            };
+
+            this.setValues = function (val) {
+                values = val;
+              
+            };
+            this.refreshUi = function () {
+                var val = values;
+                var res = [];
+                res.push({ name: 'empty', val: 1 });
+                res.push({ name: 'royalFlash', val: val.royalFlash });
+                res.push({ name: 'straightFlash', val: val.straightFlash });
+                res.push({ name: 'fourOfKind', val: val.fourOfKind });
+                res.push({ name: 'fullHouse', val: val.fullHouse });
+                res.push({ name: 'Flash', val: val.Flash });
+                res.push({ name: 'straight', val: val.straight });
+                res.push({ name: 'threeOfKind', val: val.threeOfKind });
+                res.push({ name: 'twoPairs', val: val.twoPairs });
+                res.push({ name: 'onePair', val: val.onePair });
+                res.push({ name: 'highCard', val: val.highCard });
+                res.sort(function (a, b) {
+                    return b.val - a.val;
+                });
+                $this.find('li').removeClass('most-possible').removeClass('second-possible');
+                $this.find('.' + res[0].name).addClass('most-possible');
+                $this.find('.' + res[1].name).addClass('second-possible');
+
+                $wins.find('span').text(formatValue(val.wins));
+                $lost.find('span').text(formatValue(val.lost));
+                $split.find('span').text(formatValue(val.splits));
+                $royalFlash.find('span').text(formatValue(val.royalFlash));
+                $straightFlash.find('span').text(formatValue(val.straightFlash));
+                $fourOfKind.find('span').text(formatValue(val.fourOfKind));
+                $fullHouses.find('span').text(formatValue(val.fullHouse));
+                $Flashes.find('span').text(formatValue(val.Flash));
+                $straights.find('span').text(formatValue(val.straight));
+                $threes.find('span').text(formatValue(val.threeOfKind));
+                $twopairs.find('span').text(formatValue(val.twoPairs));
+                $onepair.find('span').text(formatValue(val.onePair));
+                $highCard.find('span').text(formatValue(val.highCard));
+            };
+
+        }
+
+        $(document).ready(function () {
+
+            var ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+            var suits = ['&#x2660', '&#x2663', '&#x2665', '&#x2666'];
+
+            var table = (function () {
+
+                var dispatcher = $({});
+
+                var $table = $('.table');
+                var $cards = $table.find('.cards');
+
+                var cards = [];
+
+                function onCardClick(event, c) {
+                    dispatcher.trigger('card.click', [res, c]);
+                }
+
+                for (var i = 0; i < 5; i++) {
+                    var card = createCard();
+                    $cards.append(card.getContainer());
+                    card.addClick(onCardClick);
+                    cards.push(card);
+                }
+
+                var res = {
+                    addCardClick: function (handler) {
+                        dispatcher.bind('card.click', handler);
+                    },
+                    getKnownCards: function () {
+                        var cs = [];
+                        for (var j = 0; j < cards.length; j++) {
+                            var c = cards[j];
+                            if (!c.isEmpty()) cs.push(c);
+                        }
+                        return cs;
+                    },
+                    reset: function () {
+                        for (var j = 0; j < cards.length; j++) {
+                            cards[j].setEmpty();
+                        }
+                    }
+                };
+                return res;
+
+            })();
+
+            function createPlayerZone() {
+                var dispatcher = $({});
+
+                var $this = $('<div class="player-zone"><h2 class="title"></h2><div class="cards"><div class="clear"></div></div><ul class="statistics"></ul><div class="clear"></div></div>');
+                var $statistics = $this.find('.statistics');
+                var st = new PokerPlayerStatistics($statistics);
+
+                var $title = $this.find('.title');
+                var $cards = $this.find('.cards');
+                var card1 = createCard();
+                var card2 = createCard();
+                $cards.prepend(card1.getContainer());
+                $cards.prepend(card2.getContainer());
+
+                function onCardClick(event, card) {
+                    dispatcher.trigger('card.click', [res, card]);
+                }
+
+
+                card1.addClick(onCardClick);
+                card2.addClick(onCardClick);
+                var res = {
+                    setTitle: function (title) {
+                        $title.text(title);
+                    },
+                    getContainer: function () {
+                        return $this;
+                    },
+                    addCardClick: function (handler) {
+                        dispatcher.bind('card.click', handler);
+                    },
+                    getKnownCards: function () {
+                        var cs = [];
+                        if (!card1.isEmpty()) cs.push(card1);
+                        if (!card2.isEmpty()) cs.push(card2);
+                        return cs;
+                    },
+                    getStatistics: function () {
+                        return st.getValues();
+                    },
+                    setStatistics: function (stat) {
+                        st.setValues(stat);
+                    },
+                    reset: function () {
+                        card1.setEmpty();
+                        card2.setEmpty();
+                    },
+                    refreshStat: function () {
+                        st.refreshUi();
+                    }
+                };
+                return res;
+            }
+
+            function createCard() {
+
+                var $this = $('<div class="card"><span class="rank"></span><span class="suit"></span></div>');
+                var $suit = $this.find('.suit');
+                var $rank = $this.find('.rank');
+
+                var $dispatcher = $({});
+
+                $this.bind('click', function () {
+                    $dispatcher.trigger('click', [res]);
+                });
+
+                var rank = -1;
+                var suit = -1;
+                var visible = true;
+
+                var res = {
+                    isEmpty: function () {
+                        return rank < 0 || suit < 0;
+                    },
+                    setEmpty: function () {
+                        $rank.empty();
+                        $suit.empty();
+                        rank = -1;
+                        suit = -1;
+                    },
+                    getRank: function () {
+                        return rank;
+                    },
+                    getRankValue: function () {
+                        return rank == 0 ? 12 : rank - 1;
+                    },
+                    getSuit: function () {
+                        return suit;
+                    },
+                    setRank: function (rankIndex) {
+                        rank = rankIndex;
+                        $rank.text(ranks[rankIndex]);
+                    },
+                    setSuit: function (suitIndex) {
+                        suit = suitIndex;
+                        $suit.removeClass('hearts');
+                        $suit.removeClass('clubs');
+                        $suit.html(suits[suitIndex]);
+                        switch (suitIndex) {
+                            case 2:
+                                $suit.addClass('hearts');
+                                break;
+                            case 3:
+                                $suit.addClass('clubs');
+                                break;
+                        }
+                    },
+                    highlight: function () {
+                        $this.addClass('highlighted');
+                    },
+                    unhighlight: function () {
+                        $this.removeClass('highlighted');
+                    },
+                    highlighted: function () {
+                        return $this.hasClass('highlighted');
+                    },
+                    addClick: function (handler) {
+                        $dispatcher.bind('click', handler);
+                    },
+                    hide: function () {
+                        visible = false;
+                        $this.css({ visibility: 'hidden' });
+                    },
+                    show: function () {
+                        visible = true;
+                        $this.css({ visibility: 'visible' });
+                    },
+                    isVisible: function () {
+                        return visible;
+                    },
+                    getContainer: function () {
+                        return $this;
+                    }
+                };
+                return res;
+            }
+
+            var availableCards = (function () {
+
+                var dispatcher = $({});
+                var selectedCard = null;
+
+                var $availableCards = $('.available-cards');
+                var $table = $('<table></table>');
+
+                var cards = [];
+
+                for (var j = 0; j < 4; j++) {
+                    var $row = $('<tr></tr>');
+                    for (var i = 0; i < 13; i++) {
+                        var $cell = $('<td></td>');
+                        var card = createCard();
+                        card.setRank(i);
+                        card.setSuit(j);
+                        card.addClick(onCardClick);
+                        cards.push(card);
+                        $cell.append(card.getContainer());
+                        $row.append($cell);
+                    }
+                    $table.append($row);
+                }
+                $availableCards.append($table);
+
+                function onCardClick(event, c) {
+                    if (selectedCard && selectedCard == c) {
+                        selectedCard.unhighlight();
+                        selectedCard = null;
+                        return;
+                    }
+                    if (selectedCard) {
+                        selectedCard.unhighlight();
+                    }
+                    selectedCard = c;
+                    selectedCard.highlight();
+                }
+
+                function findCard(rank, suit) {
+                    for (var k = 0; k < cards.length; k++) {
+                        var c = cards[k];
+                        if (c.getRank() == rank && c.getSuit() == suit) return c;
+                    }
+                    return null;
+                }
+                return {
+                    showCard: function (rank, suit) {
+                        var c = findCard(rank, suit);
+                        if (c) c.show();
+                    },
+                    getSelectedCard: function () {
+                        return selectedCard;
+                    },
+                    setSelectedCard: function (c) {
+                        if (selectedCard) {
+                            selectedCard.unhighlight();
+                        }
+                        selectedCard = c;
+                        if (selectedCard) {
+                            selectedCard.highlight();
+                        }
+                    },
+                    getAvailableCards: function () {
+                        var vis = [];
+                        for (var k = 0; k < cards.length; k++) {
+                            var c = cards[k];
+                            if (c.isVisible()) {
+                                vis.push(c);
+                            }
+                        }
+                        return vis;
+                    }
+                };
+
+            })();
+
+            var $players = $('.players');
+
+            function onPlayerOrTableCardClick(event, player, card) {
+                var availableCard = availableCards.getSelectedCard();
+                if (!availableCard || !card.isEmpty()) {
+                    availableCards.showCard(card.getRank(), card.getSuit());
+                    card.setEmpty();
+                }
+                if (availableCard) {
+                    var rank = availableCard.getRank();
+                    var suit = availableCard.getSuit();
+                    card.setRank(rank);
+                    card.setSuit(suit);
+                    availableCard.hide();
+                }
+                availableCards.setSelectedCard(null);
+                $.each(players, function (index, pl) {
+                    pl.setStatistics(createEmptyStat());
+                    gamesPlayed = 0;
+                });
+            }
+
+            var player1 = createPlayerZone();
+            $players.append(player1.getContainer());
+            player1.setTitle('player1');
+
+            var player2 = createPlayerZone();
+            $players.append(player2.getContainer());
+            player2.setTitle('player2');
+
+            var players = [player1, player2];
+
+            var player3 = createPlayerZone();
+            $players.append(player3.getContainer());
+            player3.setTitle('player3');
+            players.push(player3);
+
+//            var player4 = createPlayerZone();
+//            $players.append(player4.getContainer());
+//            player4.setTitle('player4');
+//            players.push(player4);
+
+//            var player5 = createPlayerZone();
+//            $players.append(player5.getContainer());
+//            player5.setTitle('playe5');
+//            players.push(player5);
+
+//            var player6 = createPlayerZone();
+//            $players.append(player6.getContainer());
+//            player6.setTitle('player6');
+//            players.push(player6);
+
+
+            $.each(players, function (index, player) {
+                player.addCardClick(onPlayerOrTableCardClick);
+            });
+
+            table.addCardClick(onPlayerOrTableCardClick);
+            $('.reset').bind('click', function () {
+                for (var i = 0; i < players.length; i++) {
+                    players[i].reset();
+                }
+                table.reset();
+            });
+
+
+            function playGame() {
+                gamesPlayed++;
+                var hands = [];
+                var available = new CardsCollection(availableCards.getAvailableCards());
+                for (var pi = 0; pi < players.length; pi++) {
+                    var player = players[pi];
+                    var pkc = player.getKnownCards();
+                    while (pkc.length < 2) {
+                        pkc.push(available.dealRandom());
+                    }
+                    hands.push({
+                        player: player,
+                        cards: pkc
+                    });
+                }
+                var tableCards = table.getKnownCards();
+                while (tableCards.length < 5) {
+                    tableCards.push(available.dealRandom());
+                }
+                var bestScore = -1;
+                var split = false;
+                for (var hi = 0; hi < hands.length; hi++) {
+                    var hand = hands[hi];
+                    var pl = hand.player;
+                    var joined = joinCards(hand.cards, tableCards);
+                    var eval = evaluateHand(joined);
+                    if (!eval) continue;
+                    hand.evaluation = eval;
+                    if (eval.scores > bestScore) {
+                        bestScore = eval.scores;
+                        split = false;
+                    } else if (eval.scores == bestScore) {
+                        split = true;
+                    }
+                    var stat = pl.getStatistics();
+                    stat[eval.type]++;
+                    pl.setStatistics(stat);
+                }
+                for (var hi2 = 0; hi2 < hands.length; hi2++) {
+                    var hand2 = hands[hi2];
+                    var pl2 = hand2.player;
+                    var st = pl2.getStatistics();
+                    if (hand2.evaluation.scores == bestScore) {
+                        if (!split) {
+                            st.wins++;
+                        } else {
+                            st.splits++;
+                        }
+                    } else {
+                        st.lost++;
+                    }
+                    pl2.setStatistics(st);
+                }
+            }
+
+            function joinCards(playerCards, tableCards) {
+                var joinedCards = [];
+                for (var k = 0; k < playerCards.length; k++) {
+                    joinedCards.push(playerCards[k]);
+                }
+                for (var l = 0; l < tableCards.length; l++) {
+                    joinedCards.push(tableCards[l]);
+                }
+                return joinedCards;
+            }
+
+            var handEvaluation = (function () {
+                var royalFlashBase = 9 << 20;
+                var straightFlashBase = 8 << 20;
+                var fourOfKindBase = 7 << 20;
+                var fullHouseBase = 6 << 20;
+                var FlashBase = 5 << 20;
+                var straightBase = 4 << 20;
+                var threeOfKindBase = 3 << 20;
+                var twoPairsBase = 2 << 20;
+                var pairBase = 1 << 20;
+                var highCardBase = 0 << 20;
+
+                var straights = [0x100f, 0x001f, 0x003e, 0x007c, 0x00f8, 0x01f0, 0x03e0, 0x07c0, 0x0f80, 0x1f00];
+
+                function groupByRank(hand) {
+                    var res = [];
+                    for (var j = 0; j < 13; j++) {
+                        res.push({
+                            rank: j,
+                            score: j == 0 ? 12 : j - 1,
+                            count: 0
+                        });
+                    }
+                    for (var i = 0; i < hand.length; i++) {
+                        var card = hand[i];
+                        var rank = card.getRank();
+                        res[rank].count++;
+                    }
+                    res.sort(function (a, b) {
+                        var aScore = (a.count << 4) + a.score;
+                        var bScore = (b.count << 4) + b.score;
+                        return bScore - aScore;
+                    });
+                    return res;
+                }
+
+                function getRanksMask(cards) {
+                    var mask = 0;
+                    for (var i = 0; i < cards.length; i++) {
+                        var card = cards[i];
+                        var rank = card.getRankValue();
+                        mask = mask | (1 << rank);
+                    }
+                    return mask;
+                }
+
+                function getStraightScore(cards) {
+                    var mask = getRanksMask(cards);
+                    for (var j = straights.length - 1; j >= 0; j--) {
+                        var straight = straights[j];
+                        if ((mask & straight) == straight) return j;
+                    }
+                    return -1;
+                }
+
+                return {
+                    evaluateHand: function (hand) {
+                        var byRank = groupByRank(hand);
+
+                        var royalFlash = handEvaluation.getRoyalFlashScores(hand);
+                        if (royalFlash > 0) {
+                            return {
+                                type: 'royalFlash',
+                                scores: royalFlash
+                            };
+                        }
+                        var straightFlash = handEvaluation.getStraightFlashScores(hand);
+                        if (straightFlash > 0) {
+                            return {
+                                type: 'straightFlash',
+                                scores: straightFlash
+                            };
+                        }
+                        var fourOfKind = handEvaluation.getFourOfKindScores(hand, byRank);
+                        if (fourOfKind > 0) {
+                            return {
+                                type: 'fourOfKind',
+                                scores: fourOfKind
+                            };
+                        }
+                        var Flash = handEvaluation.getFlashScores(hand);
+                        if (Flash > 0) {
+                            return {
+                                type: 'Flash',
+                                scores: Flash
+                            };
+                        }
+                        var fullHouse = handEvaluation.getFullHouseScores(hand, byRank);
+                        if (fullHouse > 0) {
+                            return {
+                                type: 'fullHouse',
+                                scores: fullHouse
+                            };
+                        }
+                        var straight = handEvaluation.getStraightScores(hand);
+                        if (straight > 0) {
+                            return {
+                                type: 'straight',
+                                scores: straight
+                            };
+                        }
+                        var threeOfKind = handEvaluation.getThreeOfKindScores(hand, byRank);
+                        if (threeOfKind > 0) {
+                            return {
+                                type: 'threeOfKind',
+                                scores: threeOfKind
+                            };
+                        }
+                        var twoPairs = handEvaluation.getTwoPairsScores(hand, byRank);
+                        if (twoPairs > 0) {
+                            return {
+                                type: 'twoPairs',
+                                scores: twoPairs
+                            };
+                        }
+                        var onePair = handEvaluation.getPairsScores(hand, byRank);
+                        if (onePair > 0) {
+                            return {
+                                type: 'onePair',
+                                scores: onePair
+                            };
+                        }
+                        var highCard = handEvaluation.getHighCardScores(hand, byRank);
+                        if (highCard > 0) {
+                            return {
+                                type: 'highCard',
+                                scores: highCard
+                            };
+                        }
+                        return null;
+                    },
+                    getRoyalFlashScores: function (hand) {
+                        var cc = new CardsCollection(hand);
+                        for (var i = 0; i < 4; i++) {
+                            var suited = cc.ofSuit(i).getSource();
+                            var sc = getStraightScore(suited);
+                            if (sc == straights.length - 1) {
+                                return royalFlashBase + sc;
+                            }
+                        }
+                        return 0;
+                    },
+                    getStraightFlashScores: function (hand) {
+                        var cc = new CardsCollection(hand);
+                        for (var i = 0; i < 4; i++) {
+                            var suited = cc.ofSuit(i).getSource();
+                            var sc = getStraightScore(suited);
+                            if (sc >= 0) {
+                                return straightFlashBase + sc;
+                            }
+                        }
+                        return 0;
+                    },
+                    getFourOfKindScores: function (hand, byRank) {
+                        if (byRank[0].count == 4)
+                            return fourOfKindBase + ((byRank[0].score << 4) + byRank[1].score);
+                        return 0;
+                    },
+                    getFullHouseScores: function (hand, byRank) {
+                        if (byRank[0].count == 3 && byRank[1].count >= 2)
+                            return fullHouseBase + ((byRank[0].score << 4) + byRank[1].score);
+                        return 0;
+                    },
+                    getFlashScores: function (hand) {
+                        var cc = new CardsCollection(hand);
+                        for (var i = 0; i < 4; i++) {
+                            var suited = cc.ofSuit(i);
+                            if (suited.length >= 5) {
+                                suited = suited.orderBy(function (c) {
+                                    var rank = c.getRankValue();
+                                    return 12 - rank;
+                                });
+                                suited = suited.getSource();
+                                var val = 0;
+                                for (var j = 0; j < 5; j++) {
+                                    val = (val << 4) + suited[j].getRankValue();
+                                }
+                                return FlashBase + val;
+                            }
+                        }
+                        return 0;
+                    },
+                    getStraightScores: function (hand) {
+                        var sc = getStraightScore(hand);
+                        if (sc >= 0) {
+                            return straightBase + sc;
+                        } else {
+                            return 0;
+                        }
+                    },
+                    getThreeOfKindScores: function (hand, byRank) {
+                        if (byRank[0].count == 3)
+                            return threeOfKindBase + ((byRank[0].score << 8) + (byRank[1].score << 4) + byRank[2].score);
+                        return 0;
+                    },
+                    getTwoPairsScores: function (hand, byRank) {
+                        if (byRank[0].count == 2 && byRank[1].count == 2)
+                            return twoPairsBase + ((byRank[0].score << 8) + (byRank[1].score << 4) + byRank[2].score);
+                        return 0;
+                    },
+                    getPairsScores: function (hand, byRank) {
+                        if (byRank[0].count == 2)
+                            return pairBase + ((byRank[0].score << 12) + (byRank[1].score << 8) + (byRank[2].score << 4) + byRank[3].score);
+                        return 0;
+                    },
+                    getHighCardScores: function (hand, byRank) {
+                        return highCardBase + ((byRank[0].score << 16) + (byRank[1].score << 12) + (byRank[2].score << 8) + (byRank[3].score << 4) + byRank[4].score);
+                    }
+                };
+            })();
+
+            function evaluateHand(hand) {
+                return handEvaluation.evaluateHand(hand);
+            }
+
+            var timeFrame = 500;
+            setInterval(function () {
+                var start = new Date();
+                var targetLoad = 50;
+                for (var i = 0; i < 850; i++) {
+                    playGame();
+                    var lend = new Date().getTime() - start.getTime()
+                    if (lend > timeFrame * targetLoad / 100) break;
+                    //                    var end = new Date();
+                    //                    var duration = end.getTime() - start.getTime();
+                }
+                $('.games-played').text(gamesPlayed);
+                var end = new Date();
+                var duration = end.getTime() - start.getTime();
+                $('.load').text((Math.round(10000 * (duration / timeFrame)) / 100) + '%');
+            }, timeFrame);
+
+            setInterval(function () {
+                for (var pi = 0; pi < players.length; pi++) {
+                    var player = players[pi];
+                    player.refreshStat();
+                }
+            }, 500);
+
+
+        });
+
+
+        function CardsCollection(array) {
+
+            this.length = array.length;
+
+            this.ofSuit = function (suit) {
+                var res = [];
+                for (var i = 0; i < array.length; i++) {
+                    var card = array[i];
+                    if (card.getSuit() == suit) {
+                        res.push(card);
+                    }
+                }
+                return new CardsCollection(res);
+            };
+
+            this.dealRandom = function () {
+                if (array.length == 0) return null;
+                var r = Math.floor(Math.random() * array.length);
+                var l = array.length - 1;
+                var temp = array[r];
+                array[r] = array[l];
+                array[l] = temp;
+                this.length = array.length - 1;
+                return array.pop();
+            };
+
+            this.orderBy = function (func) {
+                var cloned = array.splice(0);
+                cloned.sort(function (a, b) {
+                    var aVal = func(a);
+                    var bVal = func(b);
+                    return aVal - bVal;
+                });
+                return new CardsCollection(cloned);
+            };
+
+            this.getSource = function () {
+                return array;
+            };
+        }
+    </script>
+</body>
+</html>
